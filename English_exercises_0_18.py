@@ -115,7 +115,7 @@ class ExercisesGeneration:
             })
 
         result_df = pd.DataFrame(result)
-""""""
+        """
         # Сохранение результата в файл CSV
 
         if not os.path.exists(path):
@@ -130,8 +130,7 @@ class ExercisesGeneration:
             except Exception as e:
                 print(f'Failed to delete {file_path}. Reason: {e}')
 
-        result_df.to_csv(f'{path}result.csv', index=False)
-
+        result_df.to_csv(f'{path}result.csv', index=False)"""
         return result_df
 
     def sentence_to_dict(self, sentence):
