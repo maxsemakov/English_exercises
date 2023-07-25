@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>English exercises</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                // Получение данных из Flask
+                var data = JSON.parse('{{ data|tojson }}');
+                var descriptions = data['descriptions'];
+                var types = data['types'];
+                var answers = data['answers'];
+
+                // Функция для отображения описания задания
+                function showDescription(index) {
+                    var description = descriptions[index];
+                    $('#description').text('Задание: ' + description);
+                    $('#hint').show();
+                    $('#result').text('');
+                }
+
+                // Функция для проверки ответа пользователя
+                function checkAnswer(index) {
+                    var userAnswerElement = $(`[name='user_answer_${index}']`);
+                    var userAnswer;
+                    if (userAnswerElement.is('input')) {
+                        userAnswer = userAnswerElement.val().trim();
+                    } else if (userAnswerElement.is('select')) {
+                        userAnswer = userAnswerElement.find('option:selected').text().trim();
+                    }
+                    var correctAnswer = answers[index];
+                    if (userAnswer === correctAnswer) {
+                        $('#result').text('Верно!');
+                    } else {
+                        $('#result').text('Попробуй что-нибудь еще.');
+                    }
+                }
+
+                // Добавление обработчиков событий к полям ввода и выпадающим спискам
+                for (var i in descriptions) {
+                    var elements = $(`[name='user_answer_${i}']`);
+                    elements.on('focus', {index: i}, function(event) {
+                        showDescription(event.data.index);
+                        $('#hint').off('click').on('click', function() {
+                            var correctAnswer = answers[event.data.index];
+                            $('#result').text('Правильный ответ: ' + correctAnswer);
+                        });
+                    });
+                    elements.on('change', {index: i}, function(event) {
+                        checkAnswer(event.data.index);
+                    });
+                }
+                $('#hint').hide();
+            });
+        </script>
+    </head>
+    <body>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Основная колонка -->
+                    <form action="/" method="post" class="m-3">
+                        {{ text|safe }}
+                        <input type="submit" value="Отправить" class="btn btn-primary">
+                    </form>
+                </div>
+                <div class="col-md-4">
+                    <!-- Информационная панель -->
+                    <div class="m-3">
+                        <h3>Информационная панель</h3>
+                        <p id="description"></p>
+                        <p id="result"></p>
+                        <button id="hint" class="btn btn-secondary">Подсказка</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
