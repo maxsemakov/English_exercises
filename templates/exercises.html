@@ -60,8 +60,10 @@
             <div class="row">
                 <div class="col-md-8">
                     <!-- Основная колонка -->
-                    <form action="/" method="post" class="m-3">
+                    <form action="/exercise_evaluation" method="post" class="m-3">
                         {{ text|safe }}
+                        <input type="hidden" name="text_evaluate" value="{{ text_evaluate }}">
+                        <input type="hidden" name="answers" value="{{ answers_json }}">
                         <input type="submit" value="Отправить" class="btn btn-primary">
                     </form>
                 </div>
