@@ -155,6 +155,7 @@ def exercise_evaluation():
     text_evaluate = cache.get('text_evaluate')
     data = cache.get('data')
     answers = data['answers']
+    print(f'ответы правильные{answers}')
     descriptions = data['descriptions']
 
     #if cache.get('data') is not None and cache.get('text_evaluate') is not None:
