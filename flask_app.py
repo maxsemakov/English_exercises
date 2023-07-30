@@ -14,12 +14,14 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def process_file():
-    if os.path.exists('split_text/block_0.csv'):
-        df = pd.read_csv('split_text/block_0.csv')
+    csv_index = session.get('csv_index', 0)
+    csv_file = f'block_{csv_index}.csv'
+    if os.path.exists('split_text/' + csv_file):
+        df = pd.read_csv('split_text/' + csv_file)
         ex_gen = ExercisesGeneration(df)
         result_df = ex_gen.generate()
         
-        return result_df, 'block_0.csv'
+        return result_df, csv_file
     else:
         return None, None
 
@@ -31,6 +33,7 @@ def index():
 def upload():
     file = request.files['file']
     filename = request.form['filename']
+    session['filename'] = filename
     if file and allowed_file(file.filename):
         file_ext = file.filename.rsplit('.', 1)[1].lower()
         if file_ext == 'fb2':
@@ -46,6 +49,7 @@ def upload():
         split_text(text)
         
         # вызов функции process_file
+        session['csv_index'] = 0
         result_df, csv_file = process_file()
     if result_df is not None:
         # сохранение данных в сессии
@@ -58,6 +62,22 @@ def upload():
     else:
         return jsonify(success=False, error='Ошибка обработки файла')
 
+@app.route('/process_file')
+def process_next_file():
+    csv_index = session.get('csv_index', 0)
+    session['csv_index'] = csv_index + 1
+    # вызов функции process_file
+    result_df, csv_file = process_file()
+    
+    if result_df is not None:
+        # сохранение данных в сессии
+        save_result_csv(result_df)
+        session['csv_file'] = csv_file
+        filename = session.get('filename')
+        
+        return jsonify(success=True, csv_file=csv_file, filename=filename)
+    else:
+        return jsonify(success=False)
 
 @app.route('/exercises', methods=['GET', 'POST'])
 
@@ -97,13 +117,16 @@ def render_exercises():
 
                     sentence_parts = row['sentence_exercise'].split('___')
                     sentence = f"<ul class='sortable' name='user_answer_{i}' data-index='{i}'>"
+                    sentence_evaluate = ""
                     for n, part in enumerate(sentence_parts):
                         sentence += part
+                        sentence_evaluate += part
                         if n < len(options_list):
                             word = options_list[n]
                             sentence += f"<li class='ui-state-default' data-word='{word}'>{word}</li>"
+                            sentence_evaluate += f"<span class='user-answer' data-index='{i}'></span>"
                     sentence += "</ul>"
-                    sentence_evaluate = sentence
+                    #sentence_evaluate = sentence
                     
                 elif pd.isna(row['options']):
                     sentence = sentence.replace("___", f"<input type='text' name='user_answer_{i}'>")
@@ -151,6 +174,7 @@ def render_exercises():
 def exercise_evaluation():
     # получение данных из формы и сессии
     user_answers = request.form.to_dict()
+    csv_file = session.get('csv_file')
     text_evaluate = cache.get('text_evaluate')
     data = cache.get('data')
     answers = data['answers']
@@ -193,23 +217,36 @@ def exercise_evaluation():
                 errors.append(error)
 
     # проверка наличия всех ключей в словаре answers
+ # проверка наличия всех ключей в словаре answers
     for key in answers:
         user_answer_key = f'user_answer_{key}'
-        if user_answer_key not in user_answers:
-            # ключ отсутствует, обработка ошибки
-            print(f"Error: key '{user_answer_key}' not found in user_answers")
-        else:
-            # ключ найден, проверка соответствия значений
-            value = user_answers[user_answer_key]
-            if answers[key] == value:
-                text_evaluate = text_evaluate.replace(f"<span class='user-answer' data-index='{key}'></span>", f"<span class='user-answer bg-success text-white' data-index='{key}'> {value}</span>")
+        if user_answer_key in user_answers:
+            user_answer_value = user_answers[user_answer_key]
+            if answers[key] == user_answer_value:
+                if isinstance(user_answer_value, list):
+                    for answer in user_answer_value:
+                        text_evaluate = text_evaluate.replace(f"<span class='user-answer' data-index='{key}'></span>", f"<span class='user-answer bg-success text-white' data-index='{key}'> {answer}</span>", 1)
+                else:
+                    text_evaluate = text_evaluate.replace(f"<span class='user-answer' data-index='{key}'></span>", f"<span class='user-answer bg-success text-white' data-index='{key}'> {user_answer_value}</span>")
             else:
-                if value == '':
-                    value = '__'
-                text_evaluate = text_evaluate.replace(f"<span class='user-answer' data-index='{key}'></span>", f"<span class='user-answer bg-danger text-white' data-index='{key}'> {value}</span>")
+                if isinstance(user_answer_value, list):
+                    for answer in user_answer_value:
+                        text_evaluate = text_evaluate.replace(f"<span class='user-answer' data-index='{key}'></span>", f"<span class='user-answer bg-danger text-white' data-index='{key}'> {answer}</span>", 1)
+                else:
+                    if user_answer_value == '':
+                        user_answer_value = '__'
+                    text_evaluate = text_evaluate.replace(f"<span class='user-answer' data-index='{key}'></span>", f"<span class='user-answer bg-danger text-white' data-index='{key}'> {user_answer_value}</span>")
 
+    next_csv_index = session.get('csv_index', 1)
+    next_csv_file = f'block_{next_csv_index}.csv'
+    if os.path.exists(f'split_text/{next_csv_file}'):
+        # отображение кнопки "Дальше"
+        show_next_button = True
+    else:
+        # отображение страницы "congratulation"
+        show_next_button = False          
     return render_template('exercise_evaluation.html', text=text_evaluate, correct_answers=correct_answers, total_questions=len(answers), errors=errors)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-
 import subprocess
 import sys
 
@@ -43,18 +42,13 @@ import random
 
 from nltk.corpus import wordnet
 
-
-from nltk.corpus import brown
-
-
-
 try:
-    # Попытка загрузить корпус brown
-    brown.words()
+   
+    
     wordnet.words()
 except LookupError:
     # Если корпус не найден, загрузить его
-    nltk.download('brown')
+    
     nltk.download('wordnet')
 
 
