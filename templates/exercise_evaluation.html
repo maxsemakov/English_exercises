@@ -7,10 +7,30 @@
     <body>
         <div class="container-fluid">
             <div class="row">
-                <div class="col-md-12">
+                <div class="col-md-8">
                     <!-- Основная колонка -->
                     <div class="m-3">
                         {{ text|safe }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <!-- Информационная панель -->
+                    <div class="m-3">
+                        <h3>Информационная панель</h3>
+                        <p>Правильных ответов: {{ correct_answers }}/{{ total_questions }}</p>
+                        {% if errors %}
+                            <h4>Ошибки:</h4>
+                            <ul>
+                                {% for error in errors %}
+                                    <li>
+                                        Задание {{ error.index }} ({{ error.description }}):<br>
+                                        Ваш ответ: <span class="text-danger">{{ error.user_answer }}</span><br>
+                                        Правильный ответ: {{ error.correct_answer }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <a href="/exercises" class="btn btn-primary">Дальше</a>
                     </div>
                 </div>
             </div>

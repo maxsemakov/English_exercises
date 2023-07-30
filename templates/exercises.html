@@ -3,15 +3,27 @@
     <head>
         <title>English exercises</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <style>
+            .sortable { list-style-type: none; margin: 0; padding: 0; }
+            .sortable li { margin: 3px 3px 3px 0; padding: 1px; float: left; width: 100px; height: 30px; font-size: 1em; text-align: center; }
+        </style>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> 
         <script>
             $(document).ready(function() {
                 // Получение данных из Flask
-                var data = JSON.parse('{{ data|tojson }}');
+                try {
+                    var data = JSON.parse('{{ data|tojson }}');
+                } catch (e) {
+                    console.log('Ошибка при парсинге JSON:', e);
+                }
                 var descriptions = data['descriptions'];
                 var types = data['types'];
                 var answers = data['answers'];
-
+                console.log(data);
+                
                 // Функция для отображения описания задания
                 function showDescription(index) {
                     var description = descriptions[index];
@@ -19,24 +31,38 @@
                     $('#hint').show();
                     $('#result').text('');
                 }
-
+        
                 // Функция для проверки ответа пользователя
                 function checkAnswer(index) {
                     var userAnswerElement = $(`[name='user_answer_${index}']`);
                     var userAnswer;
-                    if (userAnswerElement.is('input')) {
-                        userAnswer = userAnswerElement.val().trim();
+                    console.log('in answer function');
+                    var name = userAnswerElement.attr('name');
+                    console.log(name);
+                    console.log(userAnswerElement.is('ul'));
+
+                    if (userAnswerElement.is('ul')) {
+                        userAnswer = userAnswerElement.sortable('toArray', {attribute: 'data-word'});
+                        console.log('Check UL');
+                        console.log(userAnswer);
+                        $(`[name='user_answer_${index}']`).val(userAnswer.join(','));
+                        console.log($(`[name='user_answer_${index}']`).val());
                     } else if (userAnswerElement.is('select')) {
                         userAnswer = userAnswerElement.find('option:selected').text().trim();
+                        console.log('Check select');
+                    } else if (userAnswerElement.is('input')) {
+                        userAnswer = userAnswerElement.val().trim();
+                        console.log('input');
+
                     }
                     var correctAnswer = answers[index];
-                    if (userAnswer === correctAnswer) {
+                    if (JSON.stringify(userAnswer) === JSON.stringify(correctAnswer)) {
                         $('#result').text('Верно!');
                     } else {
                         $('#result').text('Попробуй что-нибудь еще.');
                     }
                 }
-
+        
                 // Добавление обработчиков событий к полям ввода и выпадающим спискам
                 for (var i in descriptions) {
                     var elements = $(`[name='user_answer_${i}']`);
@@ -51,8 +77,53 @@
                         checkAnswer(event.data.index);
                     });
                 }
+                
+                // Инициализация сортировки списков с помощью jQuery UI
+                $('.sortable').sortable({
+                    change: function(event, ui) {
+                        // Получаем индекс упражнения из атрибута data-index
+                        var index = $(this).closest('[data-index]').attr('data-index');
+                        console.log(index, 'change answer');
+                        
+                    },
+                    stop: function(event, ui) {
+                        // Получаем индекс упражнения из атрибута data-index
+                        var index = $(this).closest('[data-index]').attr('data-index');
+                        
+                        checkAnswer(index);
+                        //console.log(index);
+                    }
+                });
+                $('.sortable').disableSelection();
+                $('.sortable').on('mouseenter', function() {
+                    // Получаем индекс упражнения из ближайшего элемента с атрибутом data-index
+                    var index = $(this).closest('[data-index]').attr('data-index');
+                    //console.log('mouseenter event triggered');
+                    //console.log(index)
+                    showDescription(index);
+                    $('#hint').off('click').on('click', function() {
+                        var correctAnswer = answers[index];
+                         $('#result').text('Правильный ответ: ' + correctAnswer);
+                        });
+        
+                });
+                $('.sortable').each(function() {
+                    // Получаем индекс упражнения из атрибута data-index
+                     var index = $(this).closest('[data-index]').attr('data-index');
+
+                    // Получаем данные из списка
+                    var userAnswer = $(this).sortable('toArray', {
+                                            attribute: 'data-word'
+                    });
+
+                     // Обновление значения скрытого поля ввода
+                    $(`[name='user_answer_${index}']`).val(userAnswer.join(','));
+                    });
+        
                 $('#hint').hide();
             });
+        
+
         </script>
     </head>
     <body>
@@ -62,8 +133,9 @@
                     <!-- Основная колонка -->
                     <form action="/exercise_evaluation" method="post" class="m-3">
                         {{ text|safe }}
-                        <input type="hidden" name="text_evaluate" value="{{ text_evaluate }}">
-                        <input type="hidden" name="answers" value="{{ answers_json }}">
+                        {% for index in data.answers %}
+                        <input type="hidden" name="user_answer_{{index}}" id="user_answer_{{index}}">
+                        {% endfor %}
                         <input type="submit" value="Отправить" class="btn btn-primary">
                     </form>
                 </div>

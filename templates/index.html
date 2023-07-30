@@ -40,27 +40,27 @@
       document.getElementById('uploadForm').addEventListener('submit', function(event) {
       event.preventDefault();
 
-
+  // показать индикатор загрузки и сообщение об обработке
+      document.querySelector('.spinner-border').style.display = 'inline-block';
+      document.getElementById('processing-message').style.display = 'block';
 
   // получить выбранный файл и его имя
       var fileInput = document.querySelector('input[type=file]');
       var file = fileInput.files[0];
-      var filename = file.name;
-  // показать индикатор загрузки и сообщение об обработке
-      document.querySelector('.spinner-border').style.display = 'inline-block';
-      document.getElementById('processing-message').style.display = 'block';
+      
+
   // проверить, выбран ли файл
-    if (!file) {
+      if (!file) {
     // скрыть индикатор загрузки и сообщение об обработке
-      document.querySelector('.spinner-border').style.display = 'none';
-      document.getElementById('processing-message').style.display = 'none';
+        document.querySelector('.spinner-border').style.display = 'none';
+        document.getElementById('processing-message').style.display = 'none';
 
     // показать сообщение об ошибке
-      document.getElementById('error-message').textContent = 'А где файл то?';
-      document.getElementById('error-message').style.display = 'block';
+        document.getElementById('error-message').textContent = 'А где файл то?';
+        document.getElementById('error-message').style.display = 'block';
     return;
-     }
-
+      }
+      var filename = file.name;
 
   // создать объект FormData и добавить файл и его имя
   var formData = new FormData();

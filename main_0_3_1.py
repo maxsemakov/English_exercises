@@ -1,12 +1,13 @@
 from flask import Flask, render_template, request, jsonify, request, render_template, session
-
+from flask_caching import Cache
 import os
 import pandas as pd
 from text_convertor import FB2Reader, get_text_from_docx_file
-from English_exercises_0_2 import split_text, ExercisesGeneration
+from English_exercises_0_2 import split_text, ExercisesGeneration, save_result_csv
 
 app = Flask(__name__)
 app.secret_key = '42'
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'fb2', 'txt', 'docx'}
@@ -17,6 +18,7 @@ def process_file():
         df = pd.read_csv('split_text/block_0.csv')
         ex_gen = ExercisesGeneration(df)
         result_df = ex_gen.generate()
+        
         return result_df, 'block_0.csv'
     else:
         return None, None
@@ -47,8 +49,10 @@ def upload():
         result_df, csv_file = process_file()
     if result_df is not None:
         # сохранение данных в сессии
-        session['result_df'] = result_df.to_json()
+        save_result_csv(result_df)
+        
         session['csv_file'] = csv_file
+        
 
         return jsonify(success=True, csv_file=csv_file, filename=filename)
     else:
@@ -59,13 +63,14 @@ def upload():
 
 def render_exercises():
     # получение данных из параметров запроса
-    result_json = session.get('result_df')
+    
+    result_df = pd.read_csv('exercise_ready/result.csv')
     csv_file = session.get('csv_file')
     print(csv_file, 'in exercise')
-    if result_json is not None and csv_file is not None:
+    if result_df is not None and csv_file is not None:
         # преобразование JSON-строки в DataFrame
-        result_df = pd.read_json(result_json)
         
+        print(result_df)
         # Создание текста для каждой строки в DataFrame
         text = ""
         text_evaluate = ""
@@ -78,26 +83,50 @@ def render_exercises():
             paragraph_text_evaluate = ""
 
             for i, row in paragraph_df.iterrows():
+                #print(row)
                 sentence = row['sentence_exercise']
                 sentence_evaluate = sentence
                 if pd.isna(sentence):
                     continue
-                options = row['options']
+
                 
-                if row['options'] is None:
+                if row['type'] == 'scrambled_words':
+                # Обработка упражнения scrambled_words
                     print(f'Drag&drop exercise #{i}')
+                    options_list = eval(row.loc['options'])
+
+                    sentence_parts = row['sentence_exercise'].split('___')
+                    sentence = f"<ul class='sortable' name='user_answer_{i}' data-index='{i}'>"
+                    for n, part in enumerate(sentence_parts):
+                        sentence += part
+                        if n < len(options_list):
+                            word = options_list[n]
+                            sentence += f"<li class='ui-state-default' data-word='{word}'>{word}</li>"
+                    sentence += "</ul>"
+                    sentence_evaluate = sentence
+                    
+                elif pd.isna(row['options']):
                     sentence = sentence.replace("___", f"<input type='text' name='user_answer_{i}'>")
                     sentence_evaluate = sentence_evaluate.replace("___", f"<span class='user-answer' data-index='{i}'></span>")
                 else:
-                    options_list = options
+                    options_list = eval(row.loc['options'])
                     select_options = "".join([f"<option value='{opt.strip()}'>{opt.strip()}</option>" for opt in options_list])
                     sentence = sentence.replace("___", f"<select name='user_answer_{i}'><option value='' selected disabled hidden></option>{select_options}</select>")
                     sentence_evaluate = sentence_evaluate.replace("___", f"<span class='user-answer' data-index='{i}'></span>")
                 paragraph_text += sentence + " "
                 paragraph_text_evaluate += sentence_evaluate + " "
+
                 descriptions[i] = row['description']
+                #print(descriptions[i])
                 types[i] = row['type']
-                answers[i] = row['answer']
+                
+                if row['type'] == 'scrambled_words':
+                    answers[i] = eval(row['answer'])
+                    print(f'для индекса {i} ответ:')
+                    print(answers[i])
+                else:
+                    answers[i] = row['answer']
+
             text += f"<p>{paragraph_text}</p>"
             text_evaluate += f"<p>{paragraph_text_evaluate}</p>"
 
@@ -106,9 +135,12 @@ def render_exercises():
             'types': types,
             'answers': answers
         }
-           # сохранение данных в сессии
-        session['data'] = data
-        session['text_evaluate'] = text_evaluate
+
+        
+       
+        # сохранение данных в кэше
+        cache.set('data', data)
+        cache.set('text_evaluate', text_evaluate)
 
         return render_template('exercises.html', text=text, data=data)
     else:
@@ -119,10 +151,15 @@ def render_exercises():
 def exercise_evaluation():
     # получение данных из формы и сессии
     user_answers = request.form.to_dict()
-    text_evaluate = session.get('text_evaluate')
-    data = session.get('data')
+    print(f'ответы пользователя{user_answers}')
+    text_evaluate = cache.get('text_evaluate')
+    data = cache.get('data')
     answers = data['answers']
     descriptions = data['descriptions']
+
+    #if cache.get('data') is not None and cache.get('text_evaluate') is not None:
+    #    cache.delete('data')
+    #    cache.delete('text_evaluate')
 
     # подсчет количества правильных ответов
     correct_answers = 0

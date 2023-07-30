@@ -114,8 +114,25 @@ def exercise_evaluation():
     # получение данных из формы
     user_answers = request.form.to_dict()
     text_evaluate = request.form.get('text_evaluate')
-    answers_json = request.form.get('answers')
+    answers_json = request.form.get('answers_json')
     answers = json.loads(answers_json)
+   # print('user_answers:')
+   # print(user_answers)
+   # print('text_evaluate:')
+   # print(text_evaluate)
+    print('answers_json:', answers_json)
+    print()
+    print('answers:', answers)
+    print()
+    print('user_answers:', user_answers)
+    print()
+
+    print('thats all')
+    # проверка наличия всех ключей в словаре answers
+    for index in range(len(answers)):
+        if str(index) not in answers:
+            # ключ отсутствует, обработка ошибки
+            return f"Error: key '{index}' not found in answers"
     # сравнение ответов пользователя с правильными ответами
     # и замена текста в text_evaluate
     for index in range(len(answers)):
@@ -126,6 +143,7 @@ def exercise_evaluation():
             text_evaluate = text_evaluate.replace(f"<span class='user-answer' data-index='{index}'></span>", f"<span class='user-answer text-danger' data-index='{index}'>{value}</span>")
     # рендеринг шаблона с результатами
     return render_template('exercise_evaluation.html', text=text_evaluate)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
