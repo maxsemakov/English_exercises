@@ -1,6 +1,6 @@
 pip~=23.1.2
 attrs~=22.1.0
-zlib~=1.2.13
+
 wheel~=0.38.4
 openssl~=3.0.9
 cryptography~=39.0.1
