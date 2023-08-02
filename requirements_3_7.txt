@@ -40,7 +40,7 @@ six~=1.16.0
 python-dateutil~=2.8.2
 asttokens~=2.0.5
 executing~=0.8.3
-ipykernel~=6.19.2
+ipykernel~=6.16.2
 
 pure_eval~=0.2.2
 platformdirs~=2.5.2
