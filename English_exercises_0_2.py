@@ -30,6 +30,7 @@ except OSError:
     print('Model en_core_web_sm is not installed. Downloading...')
     subprocess.run(['python', '-m', 'spacy', 'download', 'en_core_web_sm'])
     print('Model en_core_web_sm has been downloaded')
+    nlp = spacy.load('en_core_web_sm')
 
 
 import os
