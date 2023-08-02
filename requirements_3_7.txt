@@ -51,3 +51,4 @@ nltk~=3.8.1
 spacy~=2.3.7
 
 gunicorn
+Flask-Caching
