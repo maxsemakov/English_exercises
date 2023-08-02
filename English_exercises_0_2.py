@@ -3,7 +3,6 @@
 
 import subprocess
 import sys
-from IPython import get_ipython
 
 
 try:
@@ -48,12 +47,11 @@ import random
 from nltk.corpus import wordnet
 
 try:
-   
-    
+       
     wordnet.words()
 except LookupError:
     # Если корпус не найден, загрузить его
-    
+
     nltk.download('wordnet')
 
 
