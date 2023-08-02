@@ -27,16 +27,16 @@ try:
     nlp = spacy.load('en_core_web_sm')
     print('Модель en_core_web_sm установлена')
 except OSError:
-    print('Модель en_core_web_sm не установлена. Загрузка...')
-    get_ipython().system('python -m spacy download en_core_web_sm')
-    print('Модель en_core_web_sm загружена')
+    print('Model en_core_web_sm is not installed. Downloading...')
+    subprocess.run(['python', '-m', 'spacy', 'download', 'en_core_web_sm'])
+    print('Model en_core_web_sm has been downloaded')
 
 
 import os
 import re
 import pandas as pd
 import csv
-import nltk
+
 
 import random
 
