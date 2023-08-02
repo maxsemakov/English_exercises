@@ -3,6 +3,7 @@
 
 import subprocess
 import sys
+from IPython import get_ipython
 
 
 try:
