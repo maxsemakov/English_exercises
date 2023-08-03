@@ -51,8 +51,10 @@ try:
     wordnet.words()
 except LookupError:
     # Если корпус не найден, загрузить его
-
+    print('Корпус wordnet не  установлен.  Downloading...')
     nltk.download('wordnet')
+    print('Корпус wordnet Был скачен!')
+    wordnet.words()
 
 
 
