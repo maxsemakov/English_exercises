@@ -52,3 +52,4 @@ spacy
 
 gunicorn
 Flask-Caching
+en_core_web_sm

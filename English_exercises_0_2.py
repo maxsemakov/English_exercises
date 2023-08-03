@@ -54,7 +54,10 @@ except LookupError:
     print('Корпус wordnet не  установлен.  Downloading...')
     nltk.download('wordnet')
     print('Корпус wordnet Был скачен!')
-    wordnet.words()
+    try:
+        wordnet.words()
+    except LookupError:
+        print('Корпус wordnet не может быть установлен. ')
 
 
 
