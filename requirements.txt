@@ -46,6 +46,6 @@ pure_eval~=0.2.2
 platformdirs~=2.5.2
 pandas~=2.0.3
 flask~=2.3.2
-docx~=0.2.4
-nltk~=3.8.1
-spacy~=3.6.0
+python-docx
+nltk
+spacy
