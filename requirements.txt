@@ -49,3 +49,4 @@ flask~=2.3.2
 python-docx
 nltk
 spacy
+Flask-Caching
